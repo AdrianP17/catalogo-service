@@ -8,10 +8,14 @@ namespace catalogo.Services
     public class ProductoService : IProductoService
     {
         private readonly IProductoRepository _repo;
+        private readonly IAlmacenadorArchivos _almacenadorArchivos;
+        private readonly string _containerName;
 
-        public ProductoService(IProductoRepository repo)
+        public ProductoService(IProductoRepository repo, IAlmacenadorArchivos almacenadorArchivos)
         {
             _repo = repo;
+            _almacenadorArchivos = almacenadorArchivos;
+            _containerName = "data";
         }
 
         public async Task<CrearProductoDto> CreateAsync(CrearProductoDto productoDto)
@@ -19,17 +23,31 @@ namespace catalogo.Services
             var producto = new Producto
             {
                 Nombre = productoDto.Nombre,
-                Descripcion = productoDto.Descripcion,
-                ProductoImagenes = productoDto.ImagenesBase64.Select((img, index) => new ProductoImagen
-                {
-                    Imagen = $"example://imagen-{Guid.NewGuid()}",
-                    Principal = index == 0
-                }).ToList()
+                Descripcion = productoDto.Descripcion
             };
+
+            // Procesar y subir cada imagen
+            var productoImagenes = new List<ProductoImagen>();
+            int index = 0;
+
+            foreach (var imagenArchivo in productoDto.Imagenes)
+            {
+                var url = await _almacenadorArchivos.SubirArchivoAsync(imagenArchivo, _containerName);
+
+                productoImagenes.Add(new ProductoImagen
+                {
+                    Imagen = url,
+                    Principal = index == 0
+                });
+                
+                index++;
+            }
+
+            producto.ProductoImagenes = productoImagenes;
 
             await _repo.CreateAsync(producto);
 
-            return (productoDto);
+            return productoDto;
         }
     }
 }

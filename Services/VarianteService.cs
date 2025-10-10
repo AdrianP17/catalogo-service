@@ -14,16 +14,26 @@ namespace catalogo.Services
         private readonly IProductoRepository _productoRepository;
         private readonly IVarianteRepository _varianteRepository;
         private readonly IAtributoValorRepository _atributoRepository;
-        public VarianteService(AppDBContext context, IProductoRepository productoRepository, IVarianteRepository varianteRepository, IAtributoValorRepository atributoRepository)
+        private readonly IAlmacenadorArchivos _almacenadorArchivos;
+        private readonly string _containerName = "data";
+
+        public VarianteService(AppDBContext context, IProductoRepository productoRepository, IVarianteRepository varianteRepository, IAtributoValorRepository atributoRepository, IAlmacenadorArchivos almacenadorArchivos)
         {
             _context = context;
             _productoRepository = productoRepository;
             _varianteRepository = varianteRepository;
             _atributoRepository = atributoRepository;
+            _almacenadorArchivos = almacenadorArchivos;
         }
 
         public async Task<CrearVarianteDto?> CreateAsync(int idProducto, CrearVarianteDto varianteDto)
         {
+
+            if (varianteDto.IdsAtributosValores == null || varianteDto.IdsAtributosValores.Count == 0)
+            {
+                throw new Exception("La variante debe tener al menos un atributo.");
+            }
+
             var producto = await _productoRepository.GetByIdAsync(idProducto);
             if (producto == null) return null;
 
@@ -32,22 +42,43 @@ namespace catalogo.Services
                 throw new Exception($"El SKU {varianteDto.Sku} ya existe");
             }
 
+            if (varianteDto.Imagenes == null || varianteDto.Imagenes.Count == 0)
+            {
+                throw new Exception("La variante debe tener al menos una imagen.");
+            }
+
             var atributosValores = await _atributoRepository.GetAtributosValoresByIdsAsync(varianteDto.IdsAtributosValores);
 
-            var nuevaVariante = new Variante
+            if (!atributosValores.Any(av => av.Atributo.Nombre == "Color"))
             {
-                ProductoId = idProducto,
-                Sku = varianteDto.Sku,
-                Precio = varianteDto.Precio,
-                VarianteAtributos = varianteDto.IdsAtributosValores.Select(id => new VarianteAtributo
+                throw new Exception("La variante debe incluir al menos un valor del atributo 'Color'.");
+            }
+
+            var varianteImagenes = new List<VarianteImagen>();
+            foreach (var imagen in varianteDto.Imagenes)
+            {
+                var url = await _almacenadorArchivos.SubirArchivoAsync(imagen, _containerName);
+                
+                varianteImagenes.Add(new VarianteImagen
                 {
-                    AtributoValorId = id
-                }).ToList(),
-                VarianteImagenes = varianteDto.Imagenes.Select(img => new VarianteImagen
+                    Imagen = url
+                });
+            }
+
+            var nuevaVariante = new Variante
                 {
-                    Imagen = img
-                }).ToList()
-            };
+                    ProductoId = idProducto,
+                    Sku = varianteDto.Sku,
+                    Precio = varianteDto.Precio,
+                    
+                    // Creación de VarianteAtributo (relación limpia)
+                    VarianteAtributos = varianteDto.IdsAtributosValores.Select(id => new VarianteAtributo
+                    {
+                        AtributoValorId = id
+                    }).ToList(),
+                    
+                    VarianteImagenes = varianteImagenes
+                };
 
             await _varianteRepository.AddAsync(nuevaVariante);
             await _varianteRepository.SaveChangesAsync();

@@ -18,8 +18,6 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 if (string.IsNullOrEmpty(connectionString))
 {
-    // Si la cadena de conexión no se encuentra en 'DefaultConnection' (lo que Azure inyecta), 
-    // entonces intenta obtenerla directamente como variable de entorno (para el caso de dotnet env o Docker)
     connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
 }
 
@@ -35,6 +33,7 @@ builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
         options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
+builder.Services.AddSingleton<IAlmacenadorArchivos, AzureBlobStorageService>();
 // Repositories
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IAtributoRepository, AtributoRepository>();
@@ -62,11 +61,8 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        // Logging de errores es crucial si falla la migración
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while migrating or seeding the database.");
-        // Si el curso lo permite, podrías detener la aplicación aquí
-        // throw; 
     }
 }
 

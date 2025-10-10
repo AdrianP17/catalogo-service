@@ -10,6 +10,7 @@ namespace catalogo.Dtos.Producto
         [Required]
         [MaxLength(500)]
         public string Descripcion { get; set; } = string.Empty;
-        public ICollection<string> ImagenesBase64 { get; set; } = new List<string>();
+        public ICollection<int> IdsCategorias { get; set; } = [];
+        public ICollection<IFormFile> Imagenes { get; set; } = new List<IFormFile>();
     }
 }

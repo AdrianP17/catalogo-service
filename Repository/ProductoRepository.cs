@@ -38,7 +38,7 @@ namespace catalogo.Repository
 
         public async Task<Producto?> GetByIdAsync(int id)
         {
-            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.Variantes).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.Variantes).ThenInclude(v=> v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
             if (producto == null) return null;
             return producto;
         }

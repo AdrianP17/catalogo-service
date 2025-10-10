@@ -23,7 +23,7 @@ namespace catalogo.Controllers
         }
 
         [HttpPost("productos/{id}/variantes")]
-        public async Task<IActionResult> Create([FromRoute] int id, [FromBody] CrearVarianteDto dto)
+        public async Task<IActionResult> Create([FromRoute] int id, [FromForm] CrearVarianteDto dto)
         {
             var resultado = await _varianteService.CreateAsync(id, dto);
             if (resultado == null) return NotFound("El producto no existe");

@@ -37,7 +37,7 @@ namespace catalogo.Services
 
         public Task<Atributo?> GetByIdAsync(int id)
         {
-            throw new NotImplementedException();
+            return _atributoRepository.GetByIdAsync(id);
         }
 
         public async Task<Atributo?> UpdateAsync(int id, ActualizarAtributoDto atributoDto)

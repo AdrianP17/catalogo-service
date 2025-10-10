@@ -70,6 +70,7 @@ namespace catalogo.Repository
         public async Task<IEnumerable<AtributoValor>> GetAtributosValoresByIdsAsync(ICollection<int> ids)
         {
             return await _context.AtributoValor
+                .Include(av => av.Atributo)
                 .Where(av => ids.Contains(av.Id))
                 .ToListAsync();
         }
