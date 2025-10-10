@@ -9,21 +9,25 @@ namespace catalogo.Services
     {
         private readonly IProductoRepository _repo;
         private readonly IAlmacenadorArchivos _almacenadorArchivos;
+        private readonly IAtributoValorRepository _atributoValorRepository;
         private readonly string _containerName;
 
-        public ProductoService(IProductoRepository repo, IAlmacenadorArchivos almacenadorArchivos)
+        public ProductoService(IProductoRepository repo, IAlmacenadorArchivos almacenadorArchivos, IAtributoValorRepository atributoValorRepository)
         {
             _repo = repo;
             _almacenadorArchivos = almacenadorArchivos;
             _containerName = "data";
+            _atributoValorRepository = atributoValorRepository;
         }
 
         public async Task<CrearProductoDto> CreateAsync(CrearProductoDto productoDto)
         {
+            var idsCategorias = await _atributoValorRepository.GetAtributosValoresByIdsAsync(productoDto.IdsCategorias);
             var producto = new Producto
             {
                 Nombre = productoDto.Nombre,
-                Descripcion = productoDto.Descripcion
+                Descripcion = productoDto.Descripcion,
+                ProductoAtributos = idsCategorias.Select(c => new ProductoAtributo { AtributoValorId = c.Id }).ToList()
             };
 
             // Procesar y subir cada imagen

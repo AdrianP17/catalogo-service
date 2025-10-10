@@ -33,12 +33,12 @@ namespace catalogo.Repository
 
         public async Task<List<Producto>> GetAllAsync()
         {
-            return await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.Variantes).ToListAsync();
+            return await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).ThenInclude(pa => pa.AtributoValor).Include(p => p.Variantes).ToListAsync();
         }
 
         public async Task<Producto?> GetByIdAsync(int id)
         {
-            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.Variantes).ThenInclude(v=> v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).Include(p => p.Variantes).ThenInclude(v=> v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
             if (producto == null) return null;
             return producto;
         }
