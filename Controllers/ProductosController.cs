@@ -1,6 +1,7 @@
 using catalogo.Dtos.Producto;
 using catalogo.Interfaces.IRepositories;
 using catalogo.Interfaces.IServices;
+using catalogo_service.Helpers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace catalogo.Controllers
@@ -36,10 +37,10 @@ namespace catalogo.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] CrearProductoDto dto)
         {
-            if (dto.Imagenes == null || dto.Imagenes.Count == 0)
+            /*if (dto.Imagenes == null || dto.Imagenes.Count == 0)
             {
                 return BadRequest("El producto debe tener al menos una imagen.");
-            }
+            }*/
             var resultado = await _productoService.CreateAsync(dto);
             return Ok(resultado);
         }
@@ -60,9 +61,9 @@ namespace catalogo.Controllers
         // }
 
         [HttpGet("listado")]
-        public async Task<IActionResult> GetAllListado()
+        public async Task<IActionResult> GetAllListado([FromQuery] QueryObject query)
         {
-            var productos = await _productoRepository.GetAllListadoAsync();
+            var productos = await _productoRepository.GetAllListadoAsync(query);
             return Ok(productos);
         }
     }

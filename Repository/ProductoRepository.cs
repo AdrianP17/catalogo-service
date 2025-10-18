@@ -2,6 +2,7 @@ using catalogo.Data;
 using catalogo.Dtos.Producto;
 using catalogo.Interfaces.IRepositories;
 using catalogo.Models;
+using catalogo_service.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace catalogo.Repository
@@ -43,19 +44,81 @@ namespace catalogo.Repository
             return producto;
         }
 
-        public async Task<List<ProductoListadoDto>> GetAllListadoAsync()
+        public async Task<List<ProductoListadoDto>> GetAllListadoAsync(QueryObject query)
         {
-            var productos = await _context.Producto.Select(p => new ProductoListadoDto
+            var productosQuery = _context.Producto
+                .Include(p => p.ProductoAtributos).ThenInclude(pa => pa.AtributoValor).ThenInclude(av => av.Atributo)
+                .Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).ThenInclude(va => va.AtributoValor).ThenInclude(av => av.Atributo)
+                .Include(p => p.ProductoImagenes)
+                .AsQueryable();
+
+            // Por categoría
+            if (!string.IsNullOrEmpty(query.Categoria))
+            {
+                productosQuery = productosQuery.Where(p =>
+                    p.ProductoAtributos.Any(pa =>
+                        pa.AtributoValor.Atributo.Nombre.ToLower() == "categoría" &&
+                        pa.AtributoValor.Valor.ToLower() == query.Categoria.ToLower()
+                    )
+                );
+            }
+
+            // Por color
+            if (!string.IsNullOrEmpty(query.Color))
+            {
+                productosQuery = productosQuery.Where(p =>
+                    p.Variantes.Any(v =>
+                        v.VarianteAtributos.Any(va =>
+                            va.AtributoValor.Atributo.Nombre.ToLower() == "color" &&
+                            va.AtributoValor.Valor.ToLower() == query.Color.ToLower()
+                        )
+                    )
+                );
+            }
+
+            // Por talla
+            if (!string.IsNullOrEmpty(query.Talla))
+            {
+                productosQuery = productosQuery.Where(p =>
+                    p.Variantes.Any(v =>
+                        v.VarianteAtributos.Any(va =>
+                            va.AtributoValor.Atributo.Nombre.ToLower() == "talla" &&
+                            va.AtributoValor.Valor.ToLower() == query.Talla.ToLower()
+                        )
+                    )
+                );
+            }
+
+            // Por precio
+            if (query.PrecioMin.HasValue)
+            {
+                productosQuery = productosQuery.Where(p =>
+                    p.Variantes.Any(v => v.Precio >= query.PrecioMin.Value)
+                );
+            }
+
+            if (query.PrecioMax.HasValue)
+            {
+                productosQuery = productosQuery.Where(p =>
+                    p.Variantes.Any(v => v.Precio <= query.PrecioMax.Value)
+                );
+            }
+
+            var productos = await productosQuery.Select(p => new ProductoListadoDto
             {
                 Id = p.Id,
                 Nombre = p.Nombre,
                 Precio = p.Variantes.Min(v => (decimal?)v.Precio) ?? 0m,
-                Imagen = p.ProductoImagenes.Where(img => img.Principal == true).Select(img => img.Imagen).FirstOrDefault() ?? string.Empty,
+                Imagen = p.ProductoImagenes
+                    .Where(img => img.Principal == true)
+                    .Select(img => img.Imagen)
+                    .FirstOrDefault() ?? string.Empty,
                 TienePromocion = p.IdPromocion != null
             }).ToListAsync();
 
             return productos;
         }
+
 
         public Task SaveChangesAsync()
         {
