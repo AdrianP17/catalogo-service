@@ -1,5 +1,7 @@
 using catalogo.Data;
+using catalogo.Dtos;
 using catalogo.Dtos.Producto;
+using catalogo.Helpers;
 using catalogo.Interfaces.IRepositories;
 using catalogo.Models;
 using Microsoft.EntityFrameworkCore;
@@ -38,23 +40,35 @@ namespace catalogo.Repository
 
         public async Task<Producto?> GetByIdAsync(int id)
         {
-            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).Include(p => p.Variantes).ThenInclude(v=> v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
             if (producto == null) return null;
             return producto;
         }
 
-        public async Task<List<ProductoListadoDto>> GetAllListadoAsync()
+        public async Task<PaginationResponse<ProductoListadoDto>> GetAllListadoAsync(QueryObject query)
         {
-            var productos = await _context.Producto.Select(p => new ProductoListadoDto
+            var productosQuery = _context.Producto.Select(p => new ProductoListadoDto
             {
                 Id = p.Id,
                 Nombre = p.Nombre,
                 Precio = p.Variantes.Min(v => (decimal?)v.Precio) ?? 0m,
                 Imagen = p.ProductoImagenes.Where(img => img.Principal == true).Select(img => img.Imagen).FirstOrDefault() ?? string.Empty,
                 TienePromocion = p.IdPromocion != null
-            }).ToListAsync();
+            });
 
-            return productos;
+            int total = await productosQuery.CountAsync();
+
+            int skip = (query.PageNumber - 1) * query.PageSize;
+
+            var productosFiltered = await productosQuery.Skip(skip).Take(query.PageSize).ToListAsync();
+
+            return new PaginationResponse<ProductoListadoDto>
+            {
+                Data = productosFiltered,
+                Total = total,
+                CurrentPage = query.PageNumber,
+                ItemsPerPage = query.PageSize,
+            };
         }
 
         public Task SaveChangesAsync()

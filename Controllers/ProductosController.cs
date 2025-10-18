@@ -1,4 +1,5 @@
 using catalogo.Dtos.Producto;
+using catalogo.Helpers;
 using catalogo.Interfaces.IRepositories;
 using catalogo.Interfaces.IServices;
 using Microsoft.AspNetCore.Mvc;
@@ -60,9 +61,9 @@ namespace catalogo.Controllers
         // }
 
         [HttpGet("listado")]
-        public async Task<IActionResult> GetAllListado()
+        public async Task<IActionResult> GetAllListado([FromQuery] QueryObject query)
         {
-            var productos = await _productoRepository.GetAllListadoAsync();
+            var productos = await _productoRepository.GetAllListadoAsync(query);
             return Ok(productos);
         }
     }
