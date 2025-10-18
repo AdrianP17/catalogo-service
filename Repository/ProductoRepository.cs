@@ -47,20 +47,81 @@ namespace catalogo.Repository
 
         public async Task<PaginationResponse<ProductoListadoDto>> GetAllListadoAsync(QueryObject query)
         {
-            var productosQuery = _context.Producto.Select(p => new ProductoListadoDto
+            var productosQuery = _context.Producto
+                .Include(p => p.ProductoAtributos).ThenInclude(pa => pa.AtributoValor).ThenInclude(av => av.Atributo)
+                .Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).ThenInclude(va => va.AtributoValor).ThenInclude(av => av.Atributo)
+                .Include(p => p.ProductoImagenes)
+                .AsQueryable();
+
+            // Por categoría
+            if (!string.IsNullOrEmpty(query.Categoria))
             {
-                Id = p.Id,
-                Nombre = p.Nombre,
-                Precio = p.Variantes.Min(v => (decimal?)v.Precio) ?? 0m,
-                Imagen = p.ProductoImagenes.Where(img => img.Principal == true).Select(img => img.Imagen).FirstOrDefault() ?? string.Empty,
-                TienePromocion = p.IdPromocion != null
-            });
+                productosQuery = productosQuery.Where(p =>
+                    p.ProductoAtributos.Any(pa =>
+                        pa.AtributoValor.Atributo.Nombre.ToLower() == "categoría" &&
+                        pa.AtributoValor.Valor.ToLower() == query.Categoria.ToLower()
+                    )
+                );
+            }
+
+            // Por color
+            if (!string.IsNullOrEmpty(query.Color))
+            {
+                productosQuery = productosQuery.Where(p =>
+                    p.Variantes.Any(v =>
+                        v.VarianteAtributos.Any(va =>
+                            va.AtributoValor.Atributo.Nombre.ToLower() == "color" &&
+                            va.AtributoValor.Valor.ToLower() == query.Color.ToLower()
+                        )
+                    )
+                );
+            }
+
+            // Por talla
+            if (!string.IsNullOrEmpty(query.Talla))
+            {
+                productosQuery = productosQuery.Where(p =>
+                    p.Variantes.Any(v =>
+                        v.VarianteAtributos.Any(va =>
+                            va.AtributoValor.Atributo.Nombre.ToLower() == "talla" &&
+                            va.AtributoValor.Valor.ToLower() == query.Talla.ToLower()
+                        )
+                    )
+                );
+            }
+
+            // Por precio
+            if (query.PrecioMin.HasValue)
+            {
+              productosQuery = productosQuery.Where(p =>
+                  (!p.Variantes.Any() && query.PrecioMin.Value <= 0) || 
+                  p.Variantes.Any(v => v.Precio >= query.PrecioMin.Value)
+                  );
+            }
+
+            if (query.PrecioMax.HasValue)
+            {
+              productosQuery = productosQuery.Where(p =>
+                  (!p.Variantes.Any() && query.PrecioMax.Value >= 0) || 
+                  p.Variantes.Any(v => v.Precio <= query.PrecioMax.Value)
+                  );
+            }
 
             int total = await productosQuery.CountAsync();
 
             int skip = (query.PageNumber - 1) * query.PageSize;
 
-            var productosFiltered = await productosQuery.Skip(skip).Take(query.PageSize).ToListAsync();
+            var productosFiltered = await productosQuery.Select(p=>new ProductoListadoDto
+            {
+                Id = p.Id,
+                Nombre = p.Nombre,
+                Precio = p.Variantes.Min(v => (decimal?)v.Precio) ?? 0m,
+                Imagen = p.ProductoImagenes
+                    .Where(img => img.Principal == true)
+                    .Select(img => img.Imagen)
+                    .FirstOrDefault() ?? string.Empty,
+                TienePromocion = p.IdPromocion != null
+            }).Skip(skip).Take(query.PageSize).ToListAsync();
 
             return new PaginationResponse<ProductoListadoDto>
             {
@@ -70,6 +131,7 @@ namespace catalogo.Repository
                 ItemsPerPage = query.PageSize,
             };
         }
+
 
         public Task SaveChangesAsync()
         {

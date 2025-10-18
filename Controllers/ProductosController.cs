@@ -37,10 +37,10 @@ namespace catalogo.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] CrearProductoDto dto)
         {
-            if (dto.Imagenes == null || dto.Imagenes.Count == 0)
+            /*if (dto.Imagenes == null || dto.Imagenes.Count == 0)
             {
                 return BadRequest("El producto debe tener al menos una imagen.");
-            }
+            }*/
             var resultado = await _productoService.CreateAsync(dto);
             return Ok(resultado);
         }
