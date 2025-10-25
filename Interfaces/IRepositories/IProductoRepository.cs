@@ -12,6 +12,7 @@ namespace catalogo.Interfaces.IRepositories
         Task<Producto> CreateAsync(Producto producto);
         Task<bool> DeleteAsync(int id);
         Task<PaginationResponse<ProductoListadoDto>> GetAllListadoAsync(QueryObject query);
+        Task<Producto?> GetProductoEditableByIdAsync(int id);
         Task SaveChangesAsync();
     }
 }

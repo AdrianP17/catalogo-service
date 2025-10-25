@@ -28,6 +28,8 @@ namespace catalogo.Repository
             var producto = await _context.Producto.FirstOrDefaultAsync(p => p.Id == id);
             if (producto == null) return false;
 
+            // TODO: Verificar que no haya ordenes asociadas a este producto
+
             _context.Producto.Remove(producto);
             await _context.SaveChangesAsync();
             return true;
@@ -93,25 +95,25 @@ namespace catalogo.Repository
             // Por precio
             if (query.PrecioMin.HasValue)
             {
-              productosQuery = productosQuery.Where(p =>
-                  (!p.Variantes.Any() && query.PrecioMin.Value <= 0) || 
-                  p.Variantes.Any(v => v.Precio >= query.PrecioMin.Value)
-                  );
+                productosQuery = productosQuery.Where(p =>
+                    (!p.Variantes.Any() && query.PrecioMin.Value <= 0) ||
+                    p.Variantes.Any(v => v.Precio >= query.PrecioMin.Value)
+                    );
             }
 
             if (query.PrecioMax.HasValue)
             {
-              productosQuery = productosQuery.Where(p =>
-                  (!p.Variantes.Any() && query.PrecioMax.Value >= 0) || 
-                  p.Variantes.Any(v => v.Precio <= query.PrecioMax.Value)
-                  );
+                productosQuery = productosQuery.Where(p =>
+                    (!p.Variantes.Any() && query.PrecioMax.Value >= 0) ||
+                    p.Variantes.Any(v => v.Precio <= query.PrecioMax.Value)
+                    );
             }
 
             int total = await productosQuery.CountAsync();
 
             int skip = (query.PageNumber - 1) * query.PageSize;
 
-            var productosFiltered = await productosQuery.Select(p=>new ProductoListadoDto
+            var productosFiltered = await productosQuery.Select(p => new ProductoListadoDto
             {
                 Id = p.Id,
                 Nombre = p.Nombre,
@@ -136,6 +138,13 @@ namespace catalogo.Repository
         public Task SaveChangesAsync()
         {
             return _context.SaveChangesAsync();
+        }
+
+        public async Task<Producto?> GetProductoEditableByIdAsync(int id)
+        {
+            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).FirstOrDefaultAsync(p => p.Id == id);
+            if (producto == null) return null;
+            return producto;
         }
     }
 }
