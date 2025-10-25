@@ -8,5 +8,6 @@ namespace catalogo.Interfaces.IRepositories
         Task<bool> CombinationExistsAsync(int idProducto, List<int> idsAtributosValores);
         Task AddAsync(Variante variante);
         Task<int> SaveChangesAsync();
+        Task<Variante?> GetByIdAsync(int id);
     }
 }

@@ -6,5 +6,7 @@ namespace catalogo.Interfaces.IServices
     {
         Task<CrearVarianteDto?> CreateAsync(int idProducto, CrearVarianteDto varianteDto);
         Task<List<VarianteDto>?> GetByProductIdAsync(int id);
+        Task<bool> DeleteAsync(int id);
+        Task<ActualizarVarianteDto?> UpdateAsync(int idProducto, int idVariante, ActualizarVarianteDto varianteDto);
     }
 }
