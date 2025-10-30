@@ -56,37 +56,88 @@ namespace catalogo.Repository
                 .AsQueryable();
 
             // Por categoría
-            if (!string.IsNullOrEmpty(query.Categoria))
+            if (query.Categoria != null && query.Categoria.Any())
             {
+                var categorias = query.Categoria.Select(c => c.ToLower()).ToList();
                 productosQuery = productosQuery.Where(p =>
                     p.ProductoAtributos.Any(pa =>
                         pa.AtributoValor.Atributo.Nombre.ToLower() == "categoría" &&
-                        pa.AtributoValor.Valor.ToLower() == query.Categoria.ToLower()
+                        categorias.Contains(pa.AtributoValor.Valor.ToLower())
+                    )
+                );
+            }
+
+            // Por género
+            if (query.Genero != null && query.Genero.Any())
+            {
+                var generos = query.Genero.Select(g => g.ToLower()).ToList();
+                productosQuery = productosQuery.Where(p =>
+                    p.ProductoAtributos.Any(pa =>
+                        pa.AtributoValor.Atributo.Nombre.ToLower() == "género" &&
+                        generos.Contains(pa.AtributoValor.Valor.ToLower())
+                    )
+                );
+            }
+
+            // Por deporte
+            if (query.Deporte != null && query.Deporte.Any())
+            {
+                var deportes = query.Deporte.Select(d => d.ToLower()).ToList();
+                productosQuery = productosQuery.Where(p =>
+                    p.ProductoAtributos.Any(pa =>
+                        pa.AtributoValor.Atributo.Nombre.ToLower() == "deporte" &&
+                        deportes.Contains(pa.AtributoValor.Valor.ToLower())
+                    )
+                );
+            }
+
+            // Por tipo
+            if (query.Tipo != null && query.Tipo.Any())
+            {
+                var tipos = query.Tipo.Select(t => t.ToLower()).ToList();
+                productosQuery = productosQuery.Where(p =>
+                    p.ProductoAtributos.Any(pa =>
+                        pa.AtributoValor.Atributo.Nombre.ToLower() == "tipo" &&
+                        tipos.Contains(pa.AtributoValor.Valor.ToLower())
+                    )
+                );
+            }
+
+            // Por colección
+            if (query.Coleccion != null && query.Coleccion.Any())
+            {
+                var colecciones = query.Coleccion.Select(c => c.ToLower()).ToList();
+                productosQuery = productosQuery.Where(p =>
+                    p.ProductoAtributos.Any(pa =>
+                        pa.AtributoValor.Atributo.Nombre.ToLower() == "colección" &&
+                        colecciones.Contains(pa.AtributoValor.Valor.ToLower())
                     )
                 );
             }
 
             // Por color
-            if (!string.IsNullOrEmpty(query.Color))
+            if (query.Color != null && query.Color.Any())
             {
+                var colores = query.Color.Select(c => c.ToLower()).ToList();
                 productosQuery = productosQuery.Where(p =>
                     p.Variantes.Any(v =>
                         v.VarianteAtributos.Any(va =>
                             va.AtributoValor.Atributo.Nombre.ToLower() == "color" &&
-                            va.AtributoValor.Valor.ToLower() == query.Color.ToLower()
+                            colores.Contains(va.AtributoValor.Valor.ToLower())
                         )
                     )
                 );
             }
 
             // Por talla
-            if (!string.IsNullOrEmpty(query.Talla))
+            if (query.Talla != null && query.Talla.Any())
             {
+                var tallas = query.Talla.Select(t => t.ToLower()).ToList();
                 productosQuery = productosQuery.Where(p =>
                     p.Variantes.Any(v =>
                         v.VarianteAtributos.Any(va =>
                             va.AtributoValor.Atributo.Nombre.ToLower() == "talla" &&
-                            va.AtributoValor.Valor.ToLower() == query.Talla.ToLower()
+                            tallas.Contains(va.AtributoValor.Valor.ToLower())
                         )
                     )
                 );
