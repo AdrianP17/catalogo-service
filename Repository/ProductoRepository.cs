@@ -28,6 +28,8 @@ namespace catalogo.Repository
             var producto = await _context.Producto.FirstOrDefaultAsync(p => p.Id == id);
             if (producto == null) return false;
 
+            // TODO: Verificar que no haya ordenes asociadas a este producto
+
             _context.Producto.Remove(producto);
             await _context.SaveChangesAsync();
             return true;
@@ -54,37 +56,88 @@ namespace catalogo.Repository
                 .AsQueryable();
 
             // Por categoría
-            if (!string.IsNullOrEmpty(query.Categoria))
+            if (query.Categoria != null && query.Categoria.Any())
             {
+                var categorias = query.Categoria.Select(c => c.ToLower()).ToList();
                 productosQuery = productosQuery.Where(p =>
                     p.ProductoAtributos.Any(pa =>
                         pa.AtributoValor.Atributo.Nombre.ToLower() == "categoría" &&
-                        pa.AtributoValor.Valor.ToLower() == query.Categoria.ToLower()
+                        categorias.Contains(pa.AtributoValor.Valor.ToLower())
+                    )
+                );
+            }
+
+            // Por género
+            if (query.Genero != null && query.Genero.Any())
+            {
+                var generos = query.Genero.Select(g => g.ToLower()).ToList();
+                productosQuery = productosQuery.Where(p =>
+                    p.ProductoAtributos.Any(pa =>
+                        pa.AtributoValor.Atributo.Nombre.ToLower() == "género" &&
+                        generos.Contains(pa.AtributoValor.Valor.ToLower())
+                    )
+                );
+            }
+
+            // Por deporte
+            if (query.Deporte != null && query.Deporte.Any())
+            {
+                var deportes = query.Deporte.Select(d => d.ToLower()).ToList();
+                productosQuery = productosQuery.Where(p =>
+                    p.ProductoAtributos.Any(pa =>
+                        pa.AtributoValor.Atributo.Nombre.ToLower() == "deporte" &&
+                        deportes.Contains(pa.AtributoValor.Valor.ToLower())
+                    )
+                );
+            }
+
+            // Por tipo
+            if (query.Tipo != null && query.Tipo.Any())
+            {
+                var tipos = query.Tipo.Select(t => t.ToLower()).ToList();
+                productosQuery = productosQuery.Where(p =>
+                    p.ProductoAtributos.Any(pa =>
+                        pa.AtributoValor.Atributo.Nombre.ToLower() == "tipo" &&
+                        tipos.Contains(pa.AtributoValor.Valor.ToLower())
+                    )
+                );
+            }
+
+            // Por colección
+            if (query.Coleccion != null && query.Coleccion.Any())
+            {
+                var colecciones = query.Coleccion.Select(c => c.ToLower()).ToList();
+                productosQuery = productosQuery.Where(p =>
+                    p.ProductoAtributos.Any(pa =>
+                        pa.AtributoValor.Atributo.Nombre.ToLower() == "colección" &&
+                        colecciones.Contains(pa.AtributoValor.Valor.ToLower())
                     )
                 );
             }
 
             // Por color
-            if (!string.IsNullOrEmpty(query.Color))
+            if (query.Color != null && query.Color.Any())
             {
+                var colores = query.Color.Select(c => c.ToLower()).ToList();
                 productosQuery = productosQuery.Where(p =>
                     p.Variantes.Any(v =>
                         v.VarianteAtributos.Any(va =>
                             va.AtributoValor.Atributo.Nombre.ToLower() == "color" &&
-                            va.AtributoValor.Valor.ToLower() == query.Color.ToLower()
+                            colores.Contains(va.AtributoValor.Valor.ToLower())
                         )
                     )
                 );
             }
 
             // Por talla
-            if (!string.IsNullOrEmpty(query.Talla))
+            if (query.Talla != null && query.Talla.Any())
             {
+                var tallas = query.Talla.Select(t => t.ToLower()).ToList();
                 productosQuery = productosQuery.Where(p =>
                     p.Variantes.Any(v =>
                         v.VarianteAtributos.Any(va =>
                             va.AtributoValor.Atributo.Nombre.ToLower() == "talla" &&
-                            va.AtributoValor.Valor.ToLower() == query.Talla.ToLower()
+                            tallas.Contains(va.AtributoValor.Valor.ToLower())
                         )
                     )
                 );
@@ -93,25 +146,25 @@ namespace catalogo.Repository
             // Por precio
             if (query.PrecioMin.HasValue)
             {
-              productosQuery = productosQuery.Where(p =>
-                  (!p.Variantes.Any() && query.PrecioMin.Value <= 0) || 
-                  p.Variantes.Any(v => v.Precio >= query.PrecioMin.Value)
-                  );
+                productosQuery = productosQuery.Where(p =>
+                    (!p.Variantes.Any() && query.PrecioMin.Value <= 0) ||
+                    p.Variantes.Any(v => v.Precio >= query.PrecioMin.Value)
+                    );
             }
 
             if (query.PrecioMax.HasValue)
             {
-              productosQuery = productosQuery.Where(p =>
-                  (!p.Variantes.Any() && query.PrecioMax.Value >= 0) || 
-                  p.Variantes.Any(v => v.Precio <= query.PrecioMax.Value)
-                  );
+                productosQuery = productosQuery.Where(p =>
+                    (!p.Variantes.Any() && query.PrecioMax.Value >= 0) ||
+                    p.Variantes.Any(v => v.Precio <= query.PrecioMax.Value)
+                    );
             }
 
             int total = await productosQuery.CountAsync();
 
             int skip = (query.PageNumber - 1) * query.PageSize;
 
-            var productosFiltered = await productosQuery.Select(p=>new ProductoListadoDto
+            var productosFiltered = await productosQuery.Select(p => new ProductoListadoDto
             {
                 Id = p.Id,
                 Nombre = p.Nombre,
@@ -136,6 +189,13 @@ namespace catalogo.Repository
         public Task SaveChangesAsync()
         {
             return _context.SaveChangesAsync();
+        }
+
+        public async Task<Producto?> GetProductoEditableByIdAsync(int id)
+        {
+            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).FirstOrDefaultAsync(p => p.Id == id);
+            if (producto == null) return null;
+            return producto;
         }
     }
 }

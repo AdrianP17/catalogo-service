@@ -58,7 +58,6 @@ namespace catalogo.Services
             foreach (var imagen in varianteDto.Imagenes)
             {
                 var url = await _almacenadorArchivos.SubirArchivoAsync(imagen, _containerName);
-                
                 varianteImagenes.Add(new VarianteImagen
                 {
                     Imagen = url
@@ -66,24 +65,39 @@ namespace catalogo.Services
             }
 
             var nuevaVariante = new Variante
+            {
+                ProductoId = idProducto,
+                Sku = varianteDto.Sku,
+                Precio = varianteDto.Precio,
+
+                // Creación de VarianteAtributo (relación limpia)
+                VarianteAtributos = varianteDto.IdsAtributosValores.Select(id => new VarianteAtributo
                 {
-                    ProductoId = idProducto,
-                    Sku = varianteDto.Sku,
-                    Precio = varianteDto.Precio,
-                    
-                    // Creación de VarianteAtributo (relación limpia)
-                    VarianteAtributos = varianteDto.IdsAtributosValores.Select(id => new VarianteAtributo
-                    {
-                        AtributoValorId = id
-                    }).ToList(),
-                    
-                    VarianteImagenes = varianteImagenes
-                };
+                    AtributoValorId = id
+                }).ToList(),
+
+                VarianteImagenes = varianteImagenes
+            };
 
             await _varianteRepository.AddAsync(nuevaVariante);
             await _varianteRepository.SaveChangesAsync();
 
             return varianteDto;
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var variante = await _context.Variante.FirstOrDefaultAsync(v => v.Id == id);
+            if (variante == null) return false;
+
+            foreach (var imagen in variante.VarianteImagenes)
+            {
+                await _almacenadorArchivos.EliminarArchivoAsync(imagen.Imagen, _containerName);
+            }
+
+            _context.Variante.Remove(variante);
+            await _varianteRepository.SaveChangesAsync();
+            return true;
         }
 
         public async Task<List<VarianteDto>?> GetByProductIdAsync(int id)
@@ -110,6 +124,48 @@ namespace catalogo.Services
                 })
                 .ToList()
             }).ToList();
+        }
+
+        public async Task<ActualizarVarianteDto?> UpdateAsync(int idProducto, int idVariante, ActualizarVarianteDto varianteDto)
+        {
+            var varianteExistente = await _varianteRepository.GetByIdAsync(varianteDto.Id);
+
+            if (varianteExistente == null || varianteExistente.ProductoId != idProducto)
+            {
+                return null;
+            }
+
+            varianteExistente.Precio = varianteDto.Precio;
+            varianteExistente.Sku = varianteDto.Sku;
+
+            varianteExistente.VarianteAtributos.Clear();
+            foreach (var id in varianteDto.IdsAtributosValores)
+            {
+                varianteExistente.VarianteAtributos.Add(new VarianteAtributo { AtributoValorId = id });
+            }
+
+            var urlsAEliminar = varianteExistente.VarianteImagenes
+                .Select(img => img.Imagen)
+                .Except(varianteDto.ImagenesExistentesUrls)
+                .ToList();
+
+            foreach (var url in urlsAEliminar)
+            {
+                await _almacenadorArchivos.EliminarArchivoAsync(url, _containerName);
+            }
+
+            varianteExistente.VarianteImagenes = varianteExistente.VarianteImagenes
+                .Where(img => varianteDto.ImagenesExistentesUrls.Contains(img.Imagen))
+                .ToList();
+
+            foreach (var archivo in varianteDto.NuevasImagenesArchivos)
+            {
+                var url = await _almacenadorArchivos.SubirArchivoAsync(archivo, _containerName);
+                varianteExistente.VarianteImagenes.Add(new VarianteImagen { Imagen = url });
+            }
+
+            await _varianteRepository.SaveChangesAsync();
+            return varianteDto;
         }
     }
 }

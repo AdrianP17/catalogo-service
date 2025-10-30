@@ -1,4 +1,5 @@
 using catalogo.Dtos.Producto;
+using catalogo.Dtos.Variante;
 using catalogo.Interfaces.IRepositories;
 using catalogo.Interfaces.IServices;
 using catalogo.Models;
@@ -30,7 +31,6 @@ namespace catalogo.Services
                 ProductoAtributos = idsCategorias.Select(c => new ProductoAtributo { AtributoValorId = c.Id }).ToList()
             };
 
-            // Procesar y subir cada imagen
             var productoImagenes = new List<ProductoImagen>();
             int index = 0;
 
@@ -43,7 +43,6 @@ namespace catalogo.Services
                     Imagen = url,
                     Principal = index == 0
                 });
-                
                 index++;
             }
 
@@ -52,6 +51,98 @@ namespace catalogo.Services
             await _repo.CreateAsync(producto);
 
             return productoDto;
+        }
+
+        public async Task<ActualizarProductoDto?> UpdateAsync(ActualizarProductoDto productoDto)
+        {
+            var productoExistente = await _repo.GetProductoEditableByIdAsync(productoDto.Id);
+            if (productoExistente == null) return null;
+
+            productoExistente.Nombre = productoDto.Nombre;
+            productoExistente.Descripcion = productoDto.Descripcion;
+
+            var imagenesAEliminar = productoExistente.ProductoImagenes
+                .Where(img => !productoDto.ImagenesExistentesUrls.Contains(img.Imagen))
+                .ToList();
+
+            foreach (var imagen in imagenesAEliminar)
+            {
+                await _almacenadorArchivos.EliminarArchivoAsync(imagen.Imagen, _containerName);
+                productoExistente.ProductoImagenes.Remove(imagen);
+            }
+
+            foreach (var imagenArchivo in productoDto.NuevasImagenesArchivos)
+            {
+                var url = await _almacenadorArchivos.SubirArchivoAsync(imagenArchivo, _containerName);
+                productoExistente.ProductoImagenes.Add(new ProductoImagen
+                {
+                    Imagen = url,
+                    Principal = productoExistente.ProductoImagenes.Count == 0
+                });
+            }
+
+            productoExistente.ProductoAtributos.Clear();
+            foreach (var id in productoDto.IdsAtributosValores)
+            {
+                productoExistente.ProductoAtributos.Add(new ProductoAtributo { AtributoValorId = id });
+            }
+
+            await _repo.SaveChangesAsync();
+
+            return productoDto;
+        }
+
+        private async Task CrearNuevaVarianteDesdeDto(Producto productoPadre, ActualizarVarianteDto dto)
+        {
+            var nuevasImagenes = new List<VarianteImagen>();
+            foreach (var archivo in dto.NuevasImagenesArchivos)
+            {
+                var url = await _almacenadorArchivos.SubirArchivoAsync(archivo, _containerName);
+                nuevasImagenes.Add(new VarianteImagen { Imagen = url });
+            }
+
+            var nuevaVariante = new Variante
+            {
+                Sku = dto.Sku,
+                Precio = dto.Precio,
+                ProductoId = productoPadre.Id,
+                VarianteAtributos = dto.IdsAtributosValores.Select(id => new VarianteAtributo { AtributoValorId = id }).ToList(),
+                VarianteImagenes = nuevasImagenes
+            };
+            productoPadre.Variantes.Add(nuevaVariante);
+        }
+
+        private async Task ActualizarVarianteExistente(Producto productoPadre, ActualizarVarianteDto dto)
+        {
+            var varianteExistente = productoPadre.Variantes
+                .FirstOrDefault(v => v.Id == dto.Id);
+
+            if (varianteExistente == null) return;
+
+            varianteExistente.Precio = dto.Precio;
+            varianteExistente.Sku = dto.Sku;
+
+            varianteExistente.VarianteAtributos.Clear();
+            foreach (var id in dto.IdsAtributosValores)
+            {
+                varianteExistente.VarianteAtributos.Add(new VarianteAtributo { AtributoValorId = id });
+            }
+
+            var imagenesAEliminar = varianteExistente.VarianteImagenes
+                .Where(img => !dto.ImagenesExistentesUrls.Contains(img.Imagen))
+                .ToList();
+
+            foreach (var imagen in imagenesAEliminar)
+            {
+                await _almacenadorArchivos.EliminarArchivoAsync(imagen.Imagen, _containerName);
+                varianteExistente.VarianteImagenes.Remove(imagen);
+            }
+
+            foreach (var archivo in dto.NuevasImagenesArchivos)
+            {
+                var url = await _almacenadorArchivos.SubirArchivoAsync(archivo, _containerName);
+                varianteExistente.VarianteImagenes.Add(new VarianteImagen { Imagen = url });
+            }
         }
     }
 }

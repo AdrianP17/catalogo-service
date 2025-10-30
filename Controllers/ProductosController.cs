@@ -37,34 +37,42 @@ namespace catalogo.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] CrearProductoDto dto)
         {
-            /*if (dto.Imagenes == null || dto.Imagenes.Count == 0)
+            if (dto.Imagenes == null || dto.Imagenes.Count == 0)
             {
                 return BadRequest("El producto debe tener al menos una imagen.");
-            }*/
+            }
             var resultado = await _productoService.CreateAsync(dto);
             return Ok(resultado);
         }
 
-        // [HttpPut("{id}")]
-        // public async Task<IActionResult> Update(int id, Producto producto)
-        // {
-        //     return Ok();
-        // }
-        //
-        // [HttpDelete("{id}")]
-        // public async Task<IActionResult> Delete(int id)
-        // {
-        //     var producto = await _productoRepository.DeleteAsync(id);
-        //     if (producto == false) return NotFound();
-        //
-        //     return Ok();
-        // }
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromForm] ActualizarProductoDto dto)
+        {
+            if (id != dto.Id)
+            {
+                return BadRequest("El ID del producto no coincide con el ID enviado en el body.");
+            }
+
+            var productoActualizado = await _productoService.UpdateAsync(dto);
+            if (productoActualizado == null) return NotFound();
+
+            return Ok(productoActualizado);
+        }
 
         [HttpGet("listado")]
         public async Task<IActionResult> GetAllListado([FromQuery] QueryObject query)
         {
             var productos = await _productoRepository.GetAllListadoAsync(query);
             return Ok(productos);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var producto = await _productoRepository.DeleteAsync(id);
+            if (producto == false) return NotFound();
+
+            return Ok();
         }
     }
 }
