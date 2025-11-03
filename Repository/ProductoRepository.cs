@@ -37,7 +37,7 @@ namespace catalogo.Repository
 
         public async Task<List<Producto>> GetAllAsync()
         {
-            return await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).ThenInclude(pa => pa.AtributoValor).Include(p => p.Variantes).ToListAsync();
+            return await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).ThenInclude(pa => pa.AtributoValor).Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).ToListAsync();
         }
 
         public async Task<Producto?> GetByIdAsync(int id)
