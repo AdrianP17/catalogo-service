@@ -197,5 +197,22 @@ namespace catalogo.Repository
             if (producto == null) return null;
             return producto;
         }
+
+        public Task<List<ProductoDetalleDto>> GetDetallesAsync(List<int> ids)
+        {
+            return _context.Producto
+                .Where(p => ids.Contains(p.Id))
+                .Select(p => new ProductoDetalleDto
+                {
+                    ProductoId = p.Id,
+                    Nombre = p.Nombre,
+                    Descripcion = p.Descripcion,
+                    Imagen = p.ProductoImagenes
+                        .Where(img => img.Principal == true)
+                        .Select(img => img.Imagen)
+                        .FirstOrDefault() ?? string.Empty
+                })
+                .ToListAsync();
+        }
     }
 }

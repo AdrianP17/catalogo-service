@@ -66,6 +66,13 @@ namespace catalogo.Controllers
             return Ok(productos);
         }
 
+        [HttpPost("detalles")]
+        public async Task<IActionResult> GetDetalles([FromBody] List<int> ProductoIds)
+        {
+            var productos = await _productoRepository.GetDetallesAsync(ProductoIds);
+            return Ok(productos);
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
