@@ -1,6 +1,7 @@
 using catalogo.Data;
 using catalogo.Dtos.Atributo;
 using catalogo.Dtos.Variante;
+using catalogo.Exceptions;
 using catalogo.Interfaces.IRepositories;
 using catalogo.Interfaces.IServices;
 using catalogo.Models;
@@ -31,7 +32,7 @@ namespace catalogo.Services
 
             if (varianteDto.IdsAtributosValores == null || varianteDto.IdsAtributosValores.Count == 0)
             {
-                throw new Exception("La variante debe tener al menos un atributo.");
+                throw new ApplicationException("La variante debe tener al menos un atributo.");
             }
 
             var producto = await _productoRepository.GetByIdAsync(idProducto);
@@ -39,19 +40,19 @@ namespace catalogo.Services
 
             if (await _varianteRepository.SkuExistsAsync(varianteDto.Sku))
             {
-                throw new Exception($"El SKU {varianteDto.Sku} ya existe");
+                throw new ApplicationException($"El SKU {varianteDto.Sku} ya existe");
             }
 
             if (varianteDto.Imagenes == null || varianteDto.Imagenes.Count == 0)
             {
-                throw new Exception("La variante debe tener al menos una imagen.");
+                throw new ApplicationException("La variante debe tener al menos una imagen.");
             }
 
             var atributosValores = await _atributoRepository.GetAtributosValoresByIdsAsync(varianteDto.IdsAtributosValores);
 
             if (!atributosValores.Any(av => av.Atributo.Nombre == "Color"))
             {
-                throw new Exception("La variante debe incluir al menos un valor del atributo 'Color'.");
+                throw new ApplicationException("La variante debe incluir al menos un valor del atributo 'Color'.");
             }
 
             var varianteImagenes = new List<VarianteImagen>();
