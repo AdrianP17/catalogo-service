@@ -6,6 +6,7 @@ using catalogo.Repository;
 using catalogo.Services;
 using catalogo.Interfaces.IServices;
 using catalogo.Interfaces.IRepositories;
+using catalogo.Exceptions;
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,7 +48,7 @@ builder.Services.AddScoped<IAtributoValorService, AtributoValorService>();
 builder.Services.AddScoped<IVarianteService, VarianteService>();
 
 var app = builder.Build();
-
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
