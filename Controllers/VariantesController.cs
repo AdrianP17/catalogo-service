@@ -52,5 +52,29 @@ namespace catalogo.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("{id}/info")]
+        public async Task<IActionResult> GetVarianteInfo([FromRoute] int id)
+        {
+            var varianteInfo = await _varianteService.GetVarianteInfoById(id);
+            if (varianteInfo is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(varianteInfo);
+        }
+
+        [HttpGet("by-sku")]
+        public async Task<IActionResult> GetVarianteBySKU([FromQuery] string sku)
+        {
+            if (String.IsNullOrWhiteSpace(sku)) return BadRequest("El SKU es obligatorio");
+
+            var varianteId = await _varianteService.GetVarianteIdBySku(sku);
+            if (varianteId == null) return NotFound("El SKU no existe");
+
+            return Ok(varianteId);
+        }
+
     }
 }

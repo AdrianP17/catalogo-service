@@ -126,6 +126,30 @@ namespace catalogo.Services
             }).ToList();
         }
 
+        public async Task<int?> GetVarianteIdBySku(string sku)
+        {
+            var variante = await _context.Variante.FirstOrDefaultAsync(v => v.Sku == sku);
+            if (variante is null) return null;
+            return variante.Id;
+        }
+
+        public async Task<VarianteInfoDto?> GetVarianteInfoById(int id)
+        {
+            var varianteInfo = await _context.Variante
+            .Include(v => v.VarianteAtributos).ThenInclude(va => va.AtributoValor)
+            .Include(v => v.VarianteImagenes)
+            .FirstOrDefaultAsync(v => v.Id == id);
+            if (varianteInfo is null) return null;
+
+            return new VarianteInfoDto
+            {
+                Id = varianteInfo.Id,
+                Sku = varianteInfo.Sku,
+                Imagen = varianteInfo.VarianteImagenes.FirstOrDefault()?.Imagen ?? "",
+                Atributos = varianteInfo.VarianteAtributos.Select(va => new AtributoValorDto { Id = va.Id, Valor = va.AtributoValor.Valor }).ToList()
+            };
+        }
+
         public async Task<ActualizarVarianteDto?> UpdateAsync(int idProducto, int idVariante, ActualizarVarianteDto varianteDto)
         {
             var varianteExistente = await _varianteRepository.GetByIdAsync(varianteDto.Id);
