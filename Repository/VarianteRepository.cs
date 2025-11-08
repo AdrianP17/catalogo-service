@@ -41,5 +41,10 @@ namespace catalogo.Repository
                     v.VarianteAtributos.All(va => idsAtributosValores.Contains(va.AtributoValorId))
                 );
         }
+
+        public Task<Variante?> GetByIdAsync(int id)
+        {
+            return _context.Variante.Include(v => v.VarianteImagenes).Include(v => v.VarianteAtributos).ThenInclude(va => va.AtributoValor).FirstOrDefaultAsync(v => v.Id == id);
+        }
     }
 }

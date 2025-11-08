@@ -30,5 +30,51 @@ namespace catalogo.Controllers
 
             return Ok(resultado);
         }
+
+        [HttpPut("productos/{id}/variantes/{varianteId}")]
+        public async Task<IActionResult> Update([FromRoute] int id, [FromRoute] int varianteId, [FromForm] ActualizarVarianteDto dto)
+        {
+            if (varianteId != dto.Id)
+            {
+                return BadRequest("El ID de la ruta no coincide con el ID de la variante.");
+            }
+            var resultado = await _varianteService.UpdateAsync(id, varianteId, dto);
+            if (resultado == null) return NotFound("El producto o la variante no existe");
+
+            return NoContent();
+        }
+
+        [HttpDelete("productos/{id}/variantes/{varianteId}")]
+        public async Task<IActionResult> Delete([FromRoute] int id, [FromRoute] int varianteId)
+        {
+            var resultado = await _varianteService.DeleteAsync(varianteId);
+            if (resultado == false) return NotFound("El producto o la variante no existe");
+
+            return NoContent();
+        }
+
+        [HttpGet("{id}/info")]
+        public async Task<IActionResult> GetVarianteInfo([FromRoute] int id)
+        {
+            var varianteInfo = await _varianteService.GetVarianteInfoById(id);
+            if (varianteInfo is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(varianteInfo);
+        }
+
+        [HttpGet("by-sku")]
+        public async Task<IActionResult> GetVarianteBySKU([FromQuery] string sku)
+        {
+            if (String.IsNullOrWhiteSpace(sku)) return BadRequest("El SKU es obligatorio");
+
+            var varianteId = await _varianteService.GetVarianteIdBySku(sku);
+            if (varianteId == null) return NotFound("El SKU no existe");
+
+            return Ok(varianteId);
+        }
+
     }
 }

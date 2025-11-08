@@ -1,8 +1,9 @@
 using catalogo.Data;
+using catalogo.Dtos;
 using catalogo.Dtos.Producto;
+using catalogo.Helpers;
 using catalogo.Interfaces.IRepositories;
 using catalogo.Models;
-using catalogo_service.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace catalogo.Repository
@@ -27,6 +28,8 @@ namespace catalogo.Repository
             var producto = await _context.Producto.FirstOrDefaultAsync(p => p.Id == id);
             if (producto == null) return false;
 
+            // TODO: Verificar que no haya ordenes asociadas a este producto
+
             _context.Producto.Remove(producto);
             await _context.SaveChangesAsync();
             return true;
@@ -34,17 +37,17 @@ namespace catalogo.Repository
 
         public async Task<List<Producto>> GetAllAsync()
         {
-            return await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).ThenInclude(pa => pa.AtributoValor).Include(p => p.Variantes).ToListAsync();
+            return await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).ThenInclude(pa => pa.AtributoValor).Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).ToListAsync();
         }
 
         public async Task<Producto?> GetByIdAsync(int id)
         {
-            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).Include(p => p.Variantes).ThenInclude(v=> v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
             if (producto == null) return null;
             return producto;
         }
 
-        public async Task<List<ProductoListadoDto>> GetAllListadoAsync(QueryObject query)
+        public async Task<PaginationResponse<ProductoListadoDto>> GetAllListadoAsync(QueryObject query)
         {
             var productosQuery = _context.Producto
                 .Include(p => p.ProductoAtributos).ThenInclude(pa => pa.AtributoValor).ThenInclude(av => av.Atributo)
@@ -144,15 +147,17 @@ namespace catalogo.Repository
             if (query.PrecioMin.HasValue)
             {
                 productosQuery = productosQuery.Where(p =>
+                    (!p.Variantes.Any() && query.PrecioMin.Value <= 0) ||
                     p.Variantes.Any(v => v.Precio >= query.PrecioMin.Value)
-                );
+                    );
             }
 
             if (query.PrecioMax.HasValue)
             {
                 productosQuery = productosQuery.Where(p =>
+                    (!p.Variantes.Any() && query.PrecioMax.Value >= 0) ||
                     p.Variantes.Any(v => v.Precio <= query.PrecioMax.Value)
-                );
+                    );
             }
 
             // Ordenar por precio
@@ -168,7 +173,11 @@ namespace catalogo.Repository
                 }
             }
 
-            var productos = await productosQuery.Select(p => new ProductoListadoDto
+            int total = await productosQuery.CountAsync();
+
+            int skip = (query.PageNumber - 1) * query.PageSize;
+
+            var productosFiltered = await productosQuery.Select(p => new ProductoListadoDto
             {
                 Id = p.Id,
                 Nombre = p.Nombre,
@@ -178,15 +187,45 @@ namespace catalogo.Repository
                     .Select(img => img.Imagen)
                     .FirstOrDefault() ?? string.Empty,
                 TienePromocion = p.IdPromocion != null
-            }).ToListAsync();
+            }).Skip(skip).Take(query.PageSize).ToListAsync();
 
-            return productos;
+            return new PaginationResponse<ProductoListadoDto>
+            {
+                Data = productosFiltered,
+                Total = total,
+                CurrentPage = query.PageNumber,
+                ItemsPerPage = query.PageSize,
+            };
         }
 
 
         public Task SaveChangesAsync()
         {
             return _context.SaveChangesAsync();
+        }
+
+        public async Task<Producto?> GetProductoEditableByIdAsync(int id)
+        {
+            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).FirstOrDefaultAsync(p => p.Id == id);
+            if (producto == null) return null;
+            return producto;
+        }
+
+        public Task<List<ProductoDetalleDto>> GetDetallesAsync(List<int> ids)
+        {
+            return _context.Producto
+                .Where(p => ids.Contains(p.Id))
+                .Select(p => new ProductoDetalleDto
+                {
+                    ProductoId = p.Id,
+                    Nombre = p.Nombre,
+                    Descripcion = p.Descripcion,
+                    Imagen = p.ProductoImagenes
+                        .Where(img => img.Principal == true)
+                        .Select(img => img.Imagen)
+                        .FirstOrDefault() ?? string.Empty
+                })
+                .ToListAsync();
         }
     }
 }

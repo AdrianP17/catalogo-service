@@ -1,6 +1,7 @@
+using catalogo.Dtos;
 using catalogo.Dtos.Producto;
+using catalogo.Helpers;
 using catalogo.Models;
-using catalogo_service.Helpers;
 
 namespace catalogo.Interfaces.IRepositories
 {
@@ -10,7 +11,9 @@ namespace catalogo.Interfaces.IRepositories
         Task<List<Producto>> GetAllAsync();
         Task<Producto> CreateAsync(Producto producto);
         Task<bool> DeleteAsync(int id);
-        Task<List<ProductoListadoDto>> GetAllListadoAsync(QueryObject query);
+        Task<PaginationResponse<ProductoListadoDto>> GetAllListadoAsync(QueryObject query);
+        Task<List<ProductoDetalleDto>> GetDetallesAsync(List<int> ids);
+        Task<Producto?> GetProductoEditableByIdAsync(int id);
         Task SaveChangesAsync();
     }
 }
