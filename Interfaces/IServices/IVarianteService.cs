@@ -8,5 +8,7 @@ namespace catalogo.Interfaces.IServices
         Task<List<VarianteDto>?> GetByProductIdAsync(int id);
         Task<bool> DeleteAsync(int id);
         Task<ActualizarVarianteDto?> UpdateAsync(int idProducto, int idVariante, ActualizarVarianteDto varianteDto);
+        Task<VarianteInfoDto?> GetVarianteInfoById(int id);
+        Task<int?> GetVarianteIdBySku(string sku);
     }
 }
