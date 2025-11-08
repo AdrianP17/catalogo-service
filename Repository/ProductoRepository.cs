@@ -160,6 +160,19 @@ namespace catalogo.Repository
                     );
             }
 
+            // Ordenar por precio
+            if (!string.IsNullOrWhiteSpace(query.SortBy))
+            {
+                if (query.SortBy.Equals("Precio", StringComparison.OrdinalIgnoreCase))
+                {
+                    productosQuery = productosQuery.Where(p => p.Variantes != null && p.Variantes.Any());
+                    
+                    productosQuery = query.IsDescending 
+                    ? productosQuery.OrderByDescending(p => p.Variantes.Min(v => (decimal?)v.Precio)) 
+                    : productosQuery.OrderBy(p => p.Variantes.Min(v => (decimal?)v.Precio));
+                }
+            }
+
             int total = await productosQuery.CountAsync();
 
             int skip = (query.PageNumber - 1) * query.PageSize;
