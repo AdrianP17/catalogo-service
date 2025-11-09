@@ -81,5 +81,12 @@ namespace catalogo.Controllers
 
             return Ok();
         }
+
+        
+        [HttpGet("prueba")]
+        public IActionResult Prueba(int id)
+        {
+            return Ok("Endpoint de prueba creado");
+        }
     }
 }
