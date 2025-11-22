@@ -26,6 +26,9 @@ namespace catalogo.Exceptions
                 context.Response.StatusCode = ex switch
                 {
                     ApplicationException => StatusCodes.Status400BadRequest,
+                    ArgumentException => StatusCodes.Status400BadRequest,
+                    InvalidOperationException => StatusCodes.Status400BadRequest,
+                    NotImplementedException => StatusCodes.Status501NotImplemented,
                     _ => StatusCodes.Status500InternalServerError
                 };
 
