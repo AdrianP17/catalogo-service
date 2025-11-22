@@ -1,4 +1,5 @@
 using catalogo.Dtos.Atributo;
+using catalogo.Interfaces.IRepositories;
 using catalogo.Interfaces.IServices;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,9 +10,11 @@ namespace catalogo.Controllers
     public class AtributosController : ControllerBase
     {
         private readonly IAtributoService _atributoService;
-        public AtributosController(IAtributoService atributoService)
+        private readonly IAtributoRepository _atributoRepository;
+        public AtributosController(IAtributoService atributoService, IAtributoRepository atributoRepository)
         {
             _atributoService = atributoService;
+            _atributoRepository = atributoRepository;
         }
 
         [HttpGet]
@@ -28,6 +31,13 @@ namespace catalogo.Controllers
             if (atributo == null) return NotFound();
 
             return Ok(atributo);
+        }
+
+        [HttpGet("valores")]
+        public async Task<IActionResult> GetAllValoresAsync()
+        {
+            var valores = await _atributoRepository.LoadAllAtributosAsync();
+            return Ok(valores);
         }
 
         [HttpPost]

@@ -166,9 +166,8 @@ namespace catalogo.Repository
                 if (query.SortBy.Equals("Precio", StringComparison.OrdinalIgnoreCase))
                 {
                     productosQuery = productosQuery.Where(p => p.Variantes != null && p.Variantes.Any());
-                    
-                    productosQuery = query.IsDescending 
-                    ? productosQuery.OrderByDescending(p => p.Variantes.Min(v => (decimal?)v.Precio)) 
+                    productosQuery = query.IsDescending
+                    ? productosQuery.OrderByDescending(p => p.Variantes.Min(v => (decimal?)v.Precio))
                     : productosQuery.OrderBy(p => p.Variantes.Min(v => (decimal?)v.Precio));
                 }
             }
@@ -223,7 +222,9 @@ namespace catalogo.Repository
                     Imagen = p.ProductoImagenes
                         .Where(img => img.Principal == true)
                         .Select(img => img.Imagen)
-                        .FirstOrDefault() ?? string.Empty
+                        .FirstOrDefault()
+                        ?? p.ProductoImagenes.Select(img => img.Imagen).FirstOrDefault()
+                        ?? string.Empty
                 })
                 .ToListAsync();
         }

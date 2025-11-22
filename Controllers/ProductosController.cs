@@ -12,10 +12,15 @@ namespace catalogo.Controllers
     {
         private readonly IProductoRepository _productoRepository;
         private readonly IProductoService _productoService;
-        public ProductosController(IProductoRepository productoRepository, IProductoService productoService)
+        private readonly IProductoCargaMasivaService _productoCargaMasivaService;
+        public ProductosController(
+            IProductoRepository productoRepository,
+            IProductoService productoService,
+            IProductoCargaMasivaService productoCargaMasivaService)
         {
             _productoRepository = productoRepository;
             _productoService = productoService;
+            _productoCargaMasivaService = productoCargaMasivaService;
         }
 
         [HttpGet]
@@ -82,6 +87,19 @@ namespace catalogo.Controllers
             return Ok();
         }
 
+        [HttpPost("carga-masiva")]
+        public async Task<IActionResult> CargaMasiva([FromForm] IFormFile archivoCsv, [FromForm] ICollection<IFormFile> imagenes)
+        {
+            try
+            {
+                var resultado = await _productoCargaMasivaService.CargarProductosDesdeCsvAsync(archivoCsv, imagenes);
+                return Ok(resultado);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno durante la carga masiva: {ex.Message}");
+            }
+        }
         
         [HttpGet("prueba")]
         public IActionResult Prueba(int id)

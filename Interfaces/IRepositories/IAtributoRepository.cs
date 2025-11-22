@@ -8,6 +8,7 @@ namespace catalogo.Interfaces.IRepositories
         Task<List<Atributo>> GetAllAsync();
         Task<Atributo> CreateAsync(Atributo atributo);
         Task<bool> DeleteAsync(int id);
+        Task<Dictionary<string, Dictionary<string, int>>> LoadAllAtributosAsync();
         Task SaveChangesAsync();
     }
 }
