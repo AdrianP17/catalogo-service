@@ -57,6 +57,30 @@ public class AzureBlobStorageService : IAlmacenadorArchivos
         }
     }
 
+    public async Task<string> SubirArchivoConNombreAsync(IFormFile archivo, string nombreContenedor, string nombreArchivo)
+    {
+        var contenedorCliente = _blobServiceClient.GetBlobContainerClient(nombreContenedor);
+        await contenedorCliente.CreateIfNotExistsAsync();
+        var blobCliente = contenedorCliente.GetBlobClient(nombreArchivo);
+
+        var blobHttpHeaders = new BlobHttpHeaders
+        {
+            ContentType = archivo.ContentType
+        };
+
+        var blobUploadOptions = new BlobUploadOptions
+        {
+            HttpHeaders = blobHttpHeaders
+        };
+
+        using (var stream = archivo.OpenReadStream())
+        {
+            await blobCliente.UploadAsync(stream, blobUploadOptions);
+        }
+
+        return blobCliente.Uri.ToString();
+    }
+
     public async Task<string> SubirArchivoAsync(IFormFile archivo, string nombreContenedor)
     {
         var contenedorCliente = _blobServiceClient.GetBlobContainerClient(nombreContenedor);

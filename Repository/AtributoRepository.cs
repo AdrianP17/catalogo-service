@@ -41,6 +41,21 @@ namespace catalogo.Repository
             return atributo;
         }
 
+        public async Task<Dictionary<string, Dictionary<string, int>>> LoadAllAtributosAsync()
+        {
+            var atributos = await _context.Atributo
+                .AsNoTracking()
+                .Include(a => a.AtributoValores)
+                .ToListAsync(); // Primero materializamos todo
+            return atributos.ToDictionary(
+                    a => a.Nombre,
+                    a => a.AtributoValores.ToDictionary(
+                        av => av.Valor.ToLower(),
+                        av => av.Id
+                    )
+                );
+        }
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();

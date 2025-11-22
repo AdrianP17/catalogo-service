@@ -46,6 +46,7 @@ builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IAtributoService, AtributoService>();
 builder.Services.AddScoped<IAtributoValorService, AtributoValorService>();
 builder.Services.AddScoped<IVarianteService, VarianteService>();
+builder.Services.AddScoped<IProductoCargaMasivaService, ProductoCargaMasivaService>();
 
 var app = builder.Build();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
