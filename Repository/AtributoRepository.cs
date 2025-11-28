@@ -43,13 +43,18 @@ namespace catalogo.Repository
 
         public async Task<Dictionary<string, Dictionary<string, int>>> LoadAllAtributosAsync()
         {
-            var atributos = await _context.Atributo
+            var data = await _context.Atributo
                 .AsNoTracking()
-                .Include(a => a.AtributoValores)
-                .ToListAsync(); // Primero materializamos todo
-            return atributos.ToDictionary(
+                .Select(a => new
+                {
+                    Nombre = a.Nombre,
+                    Valores = a.AtributoValores.Select(av => new { Valor = av.Valor, Id = av.Id }).ToList()
+                })
+                .ToListAsync();
+
+            return data.ToDictionary(
                     a => a.Nombre,
-                    a => a.AtributoValores.ToDictionary(
+                    a => a.Valores.ToDictionary(
                         av => av.Valor.ToLower(),
                         av => av.Id
                     )
