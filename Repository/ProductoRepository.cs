@@ -185,7 +185,7 @@ namespace catalogo.Repository
                     .Where(img => img.Principal == true)
                     .Select(img => img.Imagen)
                     .FirstOrDefault() ?? string.Empty,
-                TienePromocion = p.IdPromocion != null
+                TienePromocion = p.PromocionId != null
             }).Skip(skip).Take(query.PageSize).ToListAsync();
 
             return new PaginationResponse<ProductoListadoDto>
