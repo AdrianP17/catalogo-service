@@ -42,7 +42,14 @@ namespace catalogo.Repository
 
         public async Task<Producto?> GetByIdAsync(int id)
         {
-            var producto = await _context.Producto.Include(p => p.ProductoImagenes).Include(p => p.ProductoAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes).AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+            var producto = await _context.Producto
+                .Include(p => p.Promocion)
+                .Include(p => p.ProductoImagenes)
+                .Include(p => p.ProductoAtributos).ThenInclude(pa => pa.AtributoValor).ThenInclude(av => av.Atributo)
+                .Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).ThenInclude(va => va.AtributoValor)
+                .Include(p => p.Variantes).ThenInclude(v => v.VarianteImagenes)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == id);
             if (producto == null) return null;
             return producto;
         }
@@ -50,6 +57,7 @@ namespace catalogo.Repository
         public async Task<PaginationResponse<ProductoListadoDto>> GetAllListadoAsync(QueryObject query)
         {
             var productosQuery = _context.Producto
+                .Include(p => p.Promocion)
                 .Include(p => p.ProductoAtributos).ThenInclude(pa => pa.AtributoValor).ThenInclude(av => av.Atributo)
                 .Include(p => p.Variantes).ThenInclude(v => v.VarianteAtributos).ThenInclude(va => va.AtributoValor).ThenInclude(av => av.Atributo)
                 .Include(p => p.ProductoImagenes)
@@ -176,17 +184,35 @@ namespace catalogo.Repository
 
             int skip = (query.PageNumber - 1) * query.PageSize;
 
-            var productosFiltered = await productosQuery.Select(p => new ProductoListadoDto
+            var productosData = await productosQuery.Select(p => new
             {
-                Id = p.Id,
-                Nombre = p.Nombre,
+                p.Id,
+                p.Nombre,
                 Precio = p.Variantes.Min(v => (decimal?)v.Precio) ?? 0m,
                 Imagen = p.ProductoImagenes
                     .Where(img => img.Principal == true)
                     .Select(img => img.Imagen)
                     .FirstOrDefault() ?? string.Empty,
-                TienePromocion = p.PromocionId != null
-            }).Skip(skip).Take(query.PageSize).ToListAsync();
+                TienePromocion = p.PromocionId != null,
+                Promocion = p.Promocion
+            })
+            .Skip(skip)
+            .Take(query.PageSize)
+            .ToListAsync();
+
+            var productosFiltered = productosData.Select(p => new ProductoListadoDto
+            {
+                Id = p.Id,
+                Nombre = p.Nombre,
+                PrecioOriginal = p.Precio,
+                PrecioFinal = p.TienePromocion && p.Promocion != null && p.Promocion.Porcentaje > 0
+                    ? p.Precio * (1 - p.Promocion.Porcentaje / 100)
+                    : p.Precio,
+                PorcentajeDescuento = p.Promocion?.Porcentaje ?? 0,
+                Imagen = p.Imagen,
+                TienePromocion = p.TienePromocion
+            }).ToList();
+
 
             return new PaginationResponse<ProductoListadoDto>
             {

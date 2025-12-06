@@ -14,6 +14,8 @@ namespace catalogo.Dtos.Producto
         [MaxLength(500)]
         public string Descripcion { get; set; } = string.Empty;
 
+        public int? PromocionId { get; set; }
+
         public ICollection<string> ImagenesExistentesUrls { get; set; } = [];
         public ICollection<IFormFile> NuevasImagenesArchivos { get; set; } = [];
 
