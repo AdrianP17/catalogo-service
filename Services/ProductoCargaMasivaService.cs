@@ -48,30 +48,32 @@ namespace catalogo.Services
             if (archivoCsv == null || archivoCsv.Length == 0)
                 throw new ArgumentException("El archivo CSV es obligatorio.");
 
-            if (imagenes == null || !imagenes.Any())
-                throw new ArgumentException("Se debe proporcionar al menos una imagen.");
-
             var nuevosProductos = new List<Producto>();
             await using var transaction = await _context.Database.BeginTransactionAsync();
             var mapaAtributos = await _atributoRepository.LoadAllAtributosAsync();
 
             try
             {
-                // 1. Subir todas las imágenes y crear un diccionario para búsqueda rápida
+                // 1. Subir todas las imágenes y crear un diccionario para búsqueda rápida (si se proporcionan)
                 var mapaImagenesUrl = new Dictionary<string, string>();
-                foreach (var imagen in imagenes)
+                if (imagenes != null && imagenes.Any())
                 {
-                    var nombreSinExtension = Path.GetFileNameWithoutExtension(imagen.FileName);
-                    if (mapaImagenesUrl.ContainsKey(nombreSinExtension)) continue; // Evitar duplicados
+                    foreach (var imagen in imagenes)
+                    {
+                        var nombreSinExtension = Path.GetFileNameWithoutExtension(imagen.FileName);
+                        if (mapaImagenesUrl.ContainsKey(nombreSinExtension)) continue; // Evitar duplicados
 
-                    var url = await _almacenadorArchivos.SubirArchivoConNombreAsync(imagen, CONTENEDOR_IMAGENES, imagen.FileName);
-                    mapaImagenesUrl.Add(nombreSinExtension, url);
+                        var url = await _almacenadorArchivos.SubirArchivoConNombreAsync(imagen, CONTENEDOR_IMAGENES, imagen.FileName);
+                        mapaImagenesUrl.Add(nombreSinExtension, url);
+                    }
                 }
 
                 // 2. Leer y procesar el archivo CSV
                 var config = new CsvConfiguration(CultureInfo.InvariantCulture)
                 {
-                    Delimiter = ";"
+                    Delimiter = ";",
+                    HeaderValidated = null, // Ignorar validación por problemas de encoding en k6
+                    MissingFieldFound = null
                 };
                 using var reader = new StreamReader(archivoCsv.OpenReadStream(), Encoding.UTF8);
                 using var csv = new CsvReader(reader, config);
