@@ -100,11 +100,34 @@ namespace catalogo.Controllers
                 return StatusCode(500, $"Error interno durante la carga masiva: {ex.Message}");
             }
         }
-        
         [HttpGet("prueba")]
         public IActionResult Prueba(int id)
         {
             return Ok("Endpoint de prueba creado");
+        }
+
+        [HttpGet("con-promocion")]
+        public async Task<IActionResult> GetProductosConPromocion()
+        {
+            var productos = await _productoRepository.GetAllAsync();
+
+            var conPromocion = productos
+                .Where(p => p.PromocionId != null)
+                .Select(p => new
+                {
+                    producto = new
+                    {
+                        id = p.Id,
+                        nombre = p.Nombre,
+                        descripcion = p.Descripcion,
+                        tienePromocion = true
+                    },
+                    idPromocion = p.PromocionId,
+                    promocion = p.Promocion
+                })
+                .ToList();
+
+            return Ok(conPromocion);
         }
     }
 }

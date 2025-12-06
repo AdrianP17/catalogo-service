@@ -60,6 +60,7 @@ namespace catalogo.Services
 
             productoExistente.Nombre = productoDto.Nombre;
             productoExistente.Descripcion = productoDto.Descripcion;
+            productoExistente.PromocionId = productoDto.PromocionId;
 
             var imagenesAEliminar = productoExistente.ProductoImagenes
                 .Where(img => !productoDto.ImagenesExistentesUrls.Contains(img.Imagen))

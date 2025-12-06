@@ -40,6 +40,7 @@ builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IAtributoRepository, AtributoRepository>();
 builder.Services.AddScoped<IAtributoValorRepository, AtributoValorRepository>();
 builder.Services.AddScoped<IVarianteRepository, VarianteRepository>();
+builder.Services.AddScoped<IPromocionRepository, PromocionRepository>();
 
 // Services
 builder.Services.AddScoped<IProductoService, ProductoService>();
@@ -49,13 +50,13 @@ builder.Services.AddScoped<IVarianteService, VarianteService>();
 builder.Services.AddScoped<IProductoCargaMasivaService, ProductoCargaMasivaService>();
 
 var app = builder.Build();
-app.UseMiddleware<ExceptionHandlingMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 

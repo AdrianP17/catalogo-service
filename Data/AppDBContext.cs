@@ -20,6 +20,7 @@ public class AppDBContext : DbContext
     public DbSet<AtributoValor> AtributoValor { get; set; } = null!;
     public DbSet<ProductoAtributo> ProductoAtributo { get; set; } = null!;
     public DbSet<Favorito> Favorito { get; set; } = null!;
+    public DbSet<Promocion> Promociones { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
